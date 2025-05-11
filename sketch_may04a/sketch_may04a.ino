@@ -86,7 +86,7 @@ void loop() {
   Serial.print(voltage);
   Serial.print(" V - ");
 
-  if (voltage > 1.5) {
+  if (voltage > 1.0) {
     digitalWrite(VIBRATION_PIN, HIGH);
     Serial.println("Hand detected - Vibration ON");
   } else {
