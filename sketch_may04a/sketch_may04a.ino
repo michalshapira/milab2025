@@ -8,8 +8,8 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);  // Default address
 #define SERVO_CHANNEL_RIGHT 9       // left Servo connected to channel 9 on PCA9685
 #define SERVO_CENTER  1500    // Custom center pulse
 
-#define SERVO_RIGHT 1200    // Custom center pulse
-#define SERVO_LEFT 1800    // Custom center pulse
+#define SERVO_RIGHT 1100    // Custom center pulse
+#define SERVO_LEFT 1900    // Custom center pulse
 
 #define SERVO_RIGHT_CENTER 1500    // Custom center pulse
 #define SERVO_LEFT_CENTER 1500    // Custom center pulse

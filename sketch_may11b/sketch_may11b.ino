@@ -6,20 +6,71 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);  // Default address
 
 #define SERVO_CHANNEL_LEFT 8       // right Servo connected to channel 8 on PCA9685
 #define SERVO_CHANNEL_RIGHT 9       // left Servo connected to channel 9 on PCA9685
-#define SERVO_CENTER  1200    // Custom center pulse
-#define SERVO_LEFT   1800    // Custom right pulse
-#define SERVO_RIGHT   1800    // Custom right pulse
+#define SERVO_CENTER  1500    // Custom center pulse
+
+#define SERVO_RIGHT 1200    // Custom center pulse
+#define SERVO_LEFT 1800    // Custom center pulse
+
+#define SERVO_RIGHT_CENTER 1500    // Custom center pulse
+#define SERVO_LEFT_CENTER 1500    // Custom center pulse
+
+#define SERVO_OFFSET 300
+
+#define SERVO_LEFT_POS  (SERVO_LEFT_CENTER + SERVO_OFFSET)   // e.g., 1800
+#define SERVO_RIGHT_POS (SERVO_RIGHT_CENTER - SERVO_OFFSET)   // e.g., 1200
 
 
 #define BUTTON_PIN 32         // Joystick button
 
 // IR sensor and vibration motor
 #define IR_SENSOR_PIN 34
+#define TRAY_IR_SENSOR_PIN 35
+
 #define VIBRATION_PIN 19
+
+#define SERVO_RIGHT_TARGET 1000
+#define SERVO_LEFT_TARGET 2000
+
+#define STEP_DELAY 150        // delay between each step in ms
+#define STEP_SIZE 200         // microseconds to move per step
+
+int currentLeft = 1500;      // starting point for left servo
+int currentRight = 1500;     // starting point for right servo
+
 
 // Servo state
 bool isRight = false;
 bool prevButtonState = HIGH;
+
+void moveServoSmoothly() {
+  int currentLeft = 1500;      // starting point for left servo
+  int currentRight = 1500;
+  while (currentLeft != SERVO_LEFT_TARGET || currentRight != SERVO_RIGHT_TARGET) {
+    // Move left servo toward target
+    if (currentLeft < SERVO_LEFT_TARGET) {
+      currentLeft += STEP_SIZE;
+      if (currentLeft > SERVO_LEFT_TARGET) currentLeft = SERVO_LEFT_TARGET;
+    } else if (currentLeft > SERVO_LEFT_TARGET) {
+      currentLeft -= STEP_SIZE;
+      if (currentLeft < SERVO_LEFT_TARGET) currentLeft = SERVO_LEFT_TARGET;
+    }
+
+    // Move right servo toward target
+    if (currentRight < SERVO_RIGHT_TARGET) {
+      currentRight += STEP_SIZE;
+      if (currentRight > SERVO_RIGHT_TARGET) currentRight = SERVO_RIGHT_TARGET;
+    } else if (currentRight > SERVO_RIGHT_TARGET) {
+      currentRight -= STEP_SIZE;
+      if (currentRight < SERVO_RIGHT_TARGET) currentRight = SERVO_RIGHT_TARGET;
+    }
+
+    // Apply servo movement
+    moveServoMicroseconds(SERVO_CHANNEL_LEFT, currentLeft);
+    delay(STEP_DELAY);
+    moveServoMicroseconds(SERVO_CHANNEL_RIGHT, currentRight);
+    delay(STEP_DELAY);
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -31,6 +82,7 @@ void setup() {
 
   // IR sensor and vibration motor
   pinMode(IR_SENSOR_PIN, INPUT);
+  pinMode(TRAY_IR_SENSOR_PIN, INPUT);
   pinMode(VIBRATION_PIN, OUTPUT);
   digitalWrite(VIBRATION_PIN, LOW);  // Start with vibration off
 
@@ -49,11 +101,14 @@ void setup() {
 void loop() {
   // ---- Joystick Button Logic ----
   int buttonState = digitalRead(BUTTON_PIN);
+  int traySensorValue = analogRead(TRAY_IR_SENSOR_PIN);
+  float trayVoltage = traySensorValue * (3.3 / 4095.0);  // Convert to volts
   if (prevButtonState == HIGH && buttonState == LOW) {
     isRight = !isRight;
     if (isRight) {
-      moveServoMicroseconds(SERVO_CHANNEL_LEFT, SERVO_LEFT);
-      moveServoMicroseconds(SERVO_CHANNEL_RIGHT, SERVO_RIGHT);
+      //moveServoMicroseconds(SERVO_CHANNEL_LEFT, SERVO_LEFT);
+      //moveServoMicroseconds(SERVO_CHANNEL_RIGHT, SERVO_RIGHT);
+      moveServoSmoothly();
       Serial.println("Servo moved RIGHT");
     } else {
       moveServoMicroseconds(SERVO_CHANNEL_LEFT, SERVO_CENTER);
@@ -72,7 +127,7 @@ void loop() {
   Serial.print(voltage);
   Serial.print(" V - ");
 
-  if (voltage > 1.5) {
+  if (voltage > 1.0) {
     digitalWrite(VIBRATION_PIN, HIGH);
     Serial.println("Hand detected - Vibration ON");
   } else {
